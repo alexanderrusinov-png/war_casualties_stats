@@ -1,0 +1,39 @@
+import dash
+from dash import Dash
+import dash_bootstrap_components as dbc
+from src.layout import setup_layout
+# from src.callbacks import register_callbacks
+
+app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG])
+app.layout = setup_layout
+
+app.index_string = """
+<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <title>{%title%}</title>
+        {%favicon%}
+        {%css%}
+        <style>
+            body {
+                font-size: 0.9rem;  /* smaller than Bootstrap default */
+            }
+        </style>
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>
+
+"""
+
+# register_callbacks(app)
+
+if __name__ == "__main__":
+    app.run(debug=True)

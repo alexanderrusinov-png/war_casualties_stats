@@ -1,36 +1,7 @@
-import dash
 from dash import Dash, html, dcc
 import dash_bootstrap_components as dbc
 
-app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG])
-
-app.index_string = """
-<!DOCTYPE html>
-<html>
-    <head>
-        {%metas%}
-        <title>{%title%}</title>
-        {%favicon%}
-        {%css%}
-        <style>
-            body {
-                font-size: 0.9rem;  /* smaller than Bootstrap default */
-            }
-        </style>
-    </head>
-    <body>
-        {%app_entry%}
-        <footer>
-            {%config%}
-            {%scripts%}
-            {%renderer%}
-        </footer>
-    </body>
-</html>
-"""
-
-
-app.layout = dbc.Container(
+setup_layout = dbc.Container(
     fluid=True,
     children=[
         # ===================== Project Header =====================
@@ -429,6 +400,3 @@ app.layout = dbc.Container(
         dcc.Store(id="store-validation-state"),
     ],
 )
-
-if __name__ == "__main__":
-    app.run(debug=True)
