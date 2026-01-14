@@ -1,6 +1,8 @@
 from dash import Dash, html, dcc
 import dash_bootstrap_components as dbc
 
+from src.initial_values import ( INITIAL_PROJECT_JSON, INITIAL_UI_STATE, INITIAL_VALIDATION )
+
 setup_layout = dbc.Container(
     fluid=True,
     children=[
@@ -395,8 +397,19 @@ setup_layout = dbc.Container(
         ),
 
         # ===================== Hidden stores for state (for future callbacks) =====================
-        dcc.Store(id="store-project-json"),
         dcc.Store(id="store-data-sources"),
-        dcc.Store(id="store-validation-state"),
+        dcc.Store(
+            id="store-project-json",
+            storage_type="memory",   # project state lives only during the session
+        ),
+        dcc.Store(
+            id="store-ui-state",
+            storage_type="memory",   # UI enable/disable flags
+        ),
+        dcc.Store(
+            id="store-validation",
+            storage_type="memory",   # validation results
+        ),
+
     ],
 )
