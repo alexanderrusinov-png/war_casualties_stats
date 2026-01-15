@@ -1,5 +1,7 @@
 from dash import callback, Input, Output, State
+from src.project_ops import list_server_source_files
 
+# open/close modals
 @callback(
     Output("modal-add-source", "is_open"),
     Input("btn-add-source", "n_clicks"),
@@ -33,6 +35,24 @@ def toggle_analysis_modal(open_click, cancel_click, is_open):
         return not is_open
     return is_open
 
+# dropdowns
+@callback(
+    Output("dropdown-server-source", "options"),
+    Input("btn-refresh-sources", "n_clicks")
+)
+def update_server_source_options(_):
+    files = list_server_source_files()
+    return [{"label": f, "value": f} for f in files]
+
+@callback(
+    Output("dropdown-server-source", "options"),
+    Input("btn-refresh-sources", "n_clicks")
+)
+def update_server_source_options(_):
+    files = list_server_source_files()
+    return [{"label": f, "value": f} for f in files]
+
+# enable/disable buttons
 @callback(
     Output("btn-new-project", "disabled"),
     Input("store-ui-state", "data")

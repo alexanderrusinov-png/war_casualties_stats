@@ -29,6 +29,14 @@ add_source_modal = dbc.Modal(
                             options=[],
                             placeholder="Select server file"
                         ),
+                        label="Server File"
+                    ),
+                    dbc.Tab(
+                        dcc.Dropdown(
+                            id="dropdown-server-dir",
+                            options=[],
+                            placeholder="Select server directory"
+                        ),
                         label="Server Directory"
                     ),
                 ]

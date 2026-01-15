@@ -11,6 +11,14 @@ def list_server_source_files():
             files.append(f)
     return files
 
+def list_server_directories():
+    dirs = []
+    for name in os.listdir(SERVER_SOURCES_DIR):
+        full = os.path.join(SERVER_SOURCES_DIR, name)
+        if os.path.isdir(full):
+            dirs.append(name)
+    return dirs
+
 def load_json_file(path):
     """Utility to load a JSON file safely."""
     try:
