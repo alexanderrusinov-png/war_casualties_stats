@@ -1,4 +1,5 @@
 # src/state/initial_values.py
+import os
 
 INITIAL_PROJECT_JSON = {
     "project_name": "",
@@ -18,24 +19,24 @@ INITIAL_PROJECT_JSON = {
 }
 
 INITIAL_UI_STATE = {
-    "project_name_disabled": True,
+    "new_disabled": False,
+    "open_disabled": False,
+
     "save_disabled": True,
     "save_as_disabled": True,
 
     "add_source_disabled": True,
     "refresh_sources_disabled": True,
+    "clear_sources_disabled": True,
 
-    "demographics_type_disabled": True,
-    "demographics_value_disabled": True,
+    "open_demographics_disabled": True,
+    "open_analysis_disabled": True,
 
-    "analysis_type_disabled": True,
-    "analysis_value_disabled": True,
+    "continue_disabled": True,
 
     "territories_disabled": True,
     "source_files_disabled": True,
-    "clear_selections_disabled": True,
-
-    "continue_disabled": True
+    "clear_selections_disabled": True
 }
 
 INITIAL_VALIDATION = {
@@ -45,3 +46,15 @@ INITIAL_VALIDATION = {
     "selections_valid": False,
     "errors": []
 }
+
+# Paths to default files
+DEFAULT_DEMOGRAPHICS_PATH = os.path.join(
+    "data", "demographics", "default_demographics.json"
+)
+
+DEFAULT_ANALYSIS_PATH = os.path.join(
+    "data", "analysis", "default_analysis.json"
+)
+
+SERVER_SOURCES_DIR = os.path.join("data", "data_sources")
+

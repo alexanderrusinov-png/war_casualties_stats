@@ -1,4 +1,6 @@
 from dash import callback, Input, Output, State, ctx
+from src.project_ops import handle_new_project, handle_project_field_change, handle_add_source, handle_clear_sources
+
 from src.initial_values import (
     INITIAL_PROJECT_JSON,
     INITIAL_UI_STATE,
@@ -6,12 +8,12 @@ from src.initial_values import (
 )
 
 # --- Helper functions (to be implemented later) ---
-def handle_new_project():
+#def handle_new_project():
     # returns updated project JSON
-    pass
+ #   pass
 
 def handle_open_project(contents):
-    pass
+    return {}
 
 def handle_save_project(project):
     pass
@@ -19,17 +21,47 @@ def handle_save_project(project):
 def handle_save_as_project(project):
     pass
 
-def handle_project_field_change(project, field, value):
-    pass
+#def handle_project_field_change(project, field, value):
+#    return project
 
 def validate_project(project):
     # returns validation dict
-    pass
+    return {}
+
 
 def compute_ui_state(project, validation):
-    # returns ui-state dict
-    pass
+    ui = INITIAL_UI_STATE.copy()
 
+    # --- Add Source and Refresh Sources ---
+    # Enabled whenever a project exists (new or loaded)
+    project_exists = project is not None
+
+    print ("computing ui state - project_exists = ", project_exists)
+
+    ui["new_disabled"] =  project_exists
+    ui["open_disabled"] =  project_exists
+
+    ui["add_source_disabled"] = not project_exists
+    ui["refresh_sources_disabled"] = not project_exists
+    ui["refresh_sources_disabled"] = not project_exists
+    ui["refresh_sources_disabled"] = not project_exists
+    ui["refresh_sources_disabled"] = not project_exists
+    ui["refresh_sources_disabled"] = not project_exists
+
+    ui["add_source_disabled"] = not project_exists
+    ui["refresh_sources_disabled"] = not project_exists
+    ui["clear_sources_disabled"] = not project_exists,
+
+    ui["open_demographics_disabled"] = not project_exists
+    ui["open_analysis_disabled"] = not project_exists
+
+    ui["continue_disabled"] = not project_exists
+    ui["cancel_disabled"] = not project_exists
+
+    # ... other UI rules go here ...
+
+    print ("ui state = ", ui)
+    return ui
 
 # --- Controller callback ---
 @callback(
@@ -43,28 +75,22 @@ def compute_ui_state(project, validation):
     Input("btn-save-as-project", "n_clicks"),
 
     # project fields
-    Input("project-name", "value"),
-    Input("demographics-type", "value"),
-    Input("demographics-value", "value"),
-    Input("analysis-type", "value"),
-    Input("analysis-value", "value"),
-    Input("select-territories", "value"),
-    Input("select-source-files", "value"),
-
     State("store-project-json", "data"),
 )
+
 def project_controller(
     new_clicks, open_clicks, save_clicks, save_as_clicks,
-    project_name, demo_type, demo_value, analysis_type, analysis_value,
-    territories, source_files,
     project
 ):
+
     # --- Detect what triggered the callback ---
     trigger = ctx.triggered_id
+    print("project controller is called: ", trigger)
 
     # --- Dispatch to the correct handler ---
     if trigger == "btn-new-project":
         project = handle_new_project()
+        print ("new project created:", project)
 
     elif trigger == "btn-open-project":
         project = handle_open_project(None)  # file contents later
@@ -75,20 +101,19 @@ def project_controller(
     elif trigger == "btn-save-as-project":
         handle_save_as_project(project)
 
+    if trigger == "btn-add-source":
+        new_source_value = ""
+        project = handle_add_source(project, new_source_value)
+
+    elif trigger == "btn-clear-sources":
+        project = handle_clear_sources(project)
+
     else:
         # A field changed — update project JSON
         project = handle_project_field_change(
             project,
             trigger,
-            {
-                "project-name": project_name,
-                "demographics-type": demo_type,
-                "demographics-value": demo_value,
-                "analysis-type": analysis_type,
-                "analysis-value": analysis_value,
-                "select-territories": territories,
-                "select-source-files": source_files,
-            }.get(trigger)
+            ""
         )
 
     # --- Validation ---

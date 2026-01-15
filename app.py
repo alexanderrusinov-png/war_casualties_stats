@@ -1,9 +1,13 @@
 import dash
 from dash import Dash
 import dash_bootstrap_components as dbc
-from src.layout import setup_layout
-# from src.callbacks import register_callbacks
+from src.layout import main_layout
+
+# callbacks:
+from src import project_controller
+from src import ui_mapping
 import os
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -16,7 +20,7 @@ DEFAULT_ANALYSIS_PATH = os.path.join(
 )
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG])
-app.layout = setup_layout
+app.layout = main_layout.project_layout
 
 app.index_string = """
 <!DOCTYPE html>
