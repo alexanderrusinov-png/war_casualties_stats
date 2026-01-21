@@ -3,17 +3,19 @@ from dash import html, dcc
 
 add_source_modal = dbc.Modal(
     [
-        dbc.ModalHeader("Add Data Source"),
+        dbc.ModalHeader("Add Data Source:"),
         dbc.ModalBody(
             dbc.Tabs(
-                [
+                id="tabs-add-source",
+                children=[
                     dbc.Tab(
                         dcc.Upload(
                             id="upload-local-source",
                             children=html.Div("Drag & drop or click to upload"),
                             multiple=False
                         ),
-                        label="Local File"
+                        label="Local File",
+                        tab_id="tab-local"
                     ),
                     dbc.Tab(
                         dbc.Input(
@@ -21,7 +23,8 @@ add_source_modal = dbc.Modal(
                             type="text",
                             placeholder="Enter URL"
                         ),
-                        label="URL"
+                        label="URL",
+                        tab_id="tab-url"
                     ),
                     dbc.Tab(
                         dcc.Dropdown(
@@ -29,7 +32,8 @@ add_source_modal = dbc.Modal(
                             options=[],
                             placeholder="Select server file"
                         ),
-                        label="Server File"
+                        label="Server File",
+                        tab_id="tab-server-file"
                     ),
                     dbc.Tab(
                         dcc.Dropdown(
@@ -37,14 +41,15 @@ add_source_modal = dbc.Modal(
                             options=[],
                             placeholder="Select server directory"
                         ),
-                        label="Server Directory"
+                        label="Server Directory",
+                        tab_id="tab-server-dir"
                     ),
                 ]
             )
         ),
         dbc.ModalFooter(
             [
-                dbc.Button("Add", id="btn-confirm-add-source"),
+                dbc.Button("Ok", id="btn-confirm-add-source"),
                 dbc.Button("Cancel", id="btn-cancel-add-source"),
             ]
         )

@@ -3,6 +3,7 @@
 import json
 import os
 from src.initial_values import INITIAL_PROJECT_JSON, SERVER_SOURCES_DIR, DEFAULT_DEMOGRAPHICS_PATH, DEFAULT_ANALYSIS_PATH
+from src.data_loader import load_sources, rows_counts_by_source, clean_storage
 
 def list_server_source_files():
     files = []
@@ -51,7 +52,6 @@ def handle_new_project():
             "value": None
         }
 
-
     # --- Load default analysis definitions ---
     analysis_data = load_json_file(DEFAULT_ANALYSIS_PATH)
     if analysis_data is not None:
@@ -79,6 +79,14 @@ def handle_new_project():
 
     return project
 
+def is_duplicate(existing_source, new_source):
+    if existing_source["type"] != new_source["type"]:
+        return False
+    if existing_source["value"] != new_source["value"]:
+        return False
+    return True
+
+
 def handle_add_source(project, new_source):
     """
     Add a new data source to the project.
@@ -89,33 +97,55 @@ def handle_add_source(project, new_source):
     }
     """
     if not new_source:
-        return project
+        return project, []
 
     # Ensure list exists
     if "data_sources" not in project or project["data_sources"] is None:
         project["data_sources"] = []
 
-    # Avoid duplicates
-    if new_source not in project["data_sources"]:
-        project["data_sources"].append(new_source)
 
-    return project
+    # Avoid duplicates
+    if any(is_duplicate(s, new_source) for s in project["data_sources"]):
+        print("Duplicate data source: ", new_source["type"], ",", new_source["value"])
+        return project, []
+
+    project["data_sources"].append(new_source)
+    print("Data source is added: ", new_source["type"], ",", new_source["value"])
+    result = load_sources([new_source])
+    #for res in result:
+    #    print(res)
+
+    return project, result
+
+def handle_refresh_sources(project):
+    """
+    Remove all data sources from the project.
+    """
+    clean_storage()
+    result = load_sources(project["data_sources"])
+
+    return project, result
 
 
 def handle_clear_sources(project):
     """
     Remove all data sources from the project.
     """
+    clean_storage()
     project["data_sources"] = []
 
     # Also clear selections that depend on sources
-    project["selections"]["source_files"] = []
-    project["selections"]["territories"] = []
+    # project["selections"]["source_files"] = []
+    # project["selections"]["territories"] = []
 
     return project
 
 def handle_project_field_change(project, field, value):
 
     return project
+
+def get_loaded_files_with_row_counts ():
+
+    return rows_counts_by_source()
 
 
