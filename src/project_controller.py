@@ -1,6 +1,8 @@
 import dash
-from dash import callback, Input, Output, State, ctx
+from dash import callback, Input, Output, State, ctx, dcc
 from src.project_ops import handle_new_project, handle_project_field_change, handle_add_source, handle_clear_sources, handle_refresh_sources
+import json
+import base64
 
 from src.initial_values import (
     INITIAL_PROJECT_JSON,
@@ -15,12 +17,6 @@ from src.initial_values import (
 
 def handle_open_project(contents):
     return {}
-
-def handle_save_project(project):
-    pass
-
-def handle_save_as_project(project):
-    pass
 
 #def handle_project_field_change(project, field, value):
 #    return project
@@ -62,7 +58,7 @@ def compute_ui_state(project, validation):
     ui["continue_disabled"] = not project_exists
 
     # ... other UI rules go here ...
-    print ("ui state = ", ui)
+    #print ("ui state = ", ui)
     return ui
 
 @callback(
@@ -74,10 +70,10 @@ def update_file_info(project_json):
         return ""
 
     demo = project_json.get("demographics")
-    print ("demographics file", demo)
+    #print ("demographics file", demo)
 
     analysis = project_json.get("analysis_definitions")
-    print("analysis file", analysis)
+    #print("analysis file", analysis)
 
     parts = []
 
@@ -100,14 +96,21 @@ def update_file_info(project_json):
     Output("store-ui-state", "data"),
     Output("store-validation", "data"),
     Output("store-source-load-results", "data"),
+    Output("download-project", "data"),
 
     Input("btn-new-project", "n_clicks"),
-    Input("btn-open-project", "n_clicks"),
+    Input("upload-project", "contents"),
+
     Input("btn-save-project", "n_clicks"),
     Input("btn-save-as-project", "n_clicks"),
     Input("btn-confirm-add-source", "n_clicks"),
     Input("btn-refresh-sources", "n_clicks"),
     Input("btn-clear-sources", "n_clicks"),
+
+    Input("btn-save-project", "n_clicks"),
+    Input("btn-save-as-confirm", "n_clicks"),
+
+    State("input-save-as-filename", "value"),
 
     State("tabs-add-source", "active_tab"),
     State("upload-local-source", "contents"),
@@ -119,37 +122,58 @@ def update_file_info(project_json):
     # project fields
     State("store-project-json", "data"),
     State("store-source-load-results", "data"),
+    State("dd-territories", "value"),
+    State("dd-data-files", "value"),
+    State("store-validation", "data")
 )
 
 def project_controller(
-    new_clicks, open_clicks, save_clicks, save_as_clicks,
-    add_source_clicks, refresh_sources_click, clear_sources_click, source_tab, local_content, local_filename, input_url, server_file, server_dir,
-    project, all_results
+    new_clicks, read_content, save_clicks, save_as_clicks,
+    add_source_clicks, refresh_sources_click, clear_sources_click, save_click, save_project_as_click,
+    filename, source_tab, local_content, local_filename, input_url, server_file, server_dir,
+    project, all_results, selected_territories, select_data_files, prev_validation
 ):
 
     # --- Detect what triggered the callback ---
     trigger = ctx.triggered_id
-    #print("project controller is called: ", trigger)
+
+
+    #if project:
+    #    print("project controller is called ", trigger, "selected: ", selected_territories, ",", select_data_files)
 
     results_changed = False
+    download_proj = False
+
+    validation_changed = False
+    validation = prev_validation
+    if validation:
+        if validation["should_check_selections"]:
+            validation["should_check_selections"] = False
+            validation_changed = True
 
     # --- Dispatch to the correct handler ---
     if trigger == "btn-new-project":
-        project = handle_new_project()
-        print ("new project created:", project)
+        if new_clicks is not None:
+            project = handle_new_project()
+            #print ("new project created:", project)
+            validation = INITIAL_VALIDATION
+            results_changed = True
+            validation_changed = True
+            all_results = []
+
+    if trigger =="upload-project":
+        content_type, content_string = read_content.split(",", 1)
+        decoded = base64.b64decode(content_string)
+        project = json.loads(decoded.decode("utf-8"))
+        #print("project opened:", project)
+        validation = INITIAL_VALIDATION
+        project, all_results = handle_refresh_sources(project)
+        validation["should_check_selections"] = True
+        validation_changed = True
         results_changed = True
-        all_results = []
-
-    elif trigger == "btn-open-project":
-        project = handle_open_project(None)  # file contents later
-
-    elif trigger == "btn-save-project":
-        handle_save_project(project)
-
-    elif trigger == "btn-save-as-project":
-        handle_save_as_project(project)
 
     if trigger == "btn-confirm-add-source":
+
         source = {
             "type": "undefined"
         }
@@ -186,16 +210,27 @@ def project_controller(
         all_results.extend (load_results)
         #print("results after:", all_results)
         results_changed = True
+        validation_changed = True
 
     elif trigger == "btn-clear-sources":
         project = handle_clear_sources(project)
         all_results = []
         results_changed = True
+        validation_changed = True
 
     elif trigger == "btn-refresh-sources":
         project, all_results = handle_refresh_sources(project)
         results_changed = True
+        validation_changed = True
 
+    elif trigger == "btn-save-project":
+        project_filename = project.get("project_file")
+        if project_filename:
+            download_proj = True
+    elif trigger == "btn-save-as-confirm":
+        if filename:
+            project["project_file"] = filename + ".json"
+            download_proj = True
     else:
         # A field changed — update project JSON
         project = handle_project_field_change(
@@ -204,13 +239,25 @@ def project_controller(
             ""
         )
 
+    download_op = dash.no_update
+    if download_proj:
+        project["selected_territories"] = selected_territories
+        project["selected_data_files"] = select_data_files
+        download_op = dcc.send_string(json.dumps(project, indent=2), project["project_file"])
+
     # --- Validation ---
-    validation = validate_project(project)
+    # validation = validate_project(project)
 
     # --- Compute UI state ---
     ui_state = compute_ui_state(project, validation)
 
+    if not validation_changed:
+        validation = dash.no_update
+
     if results_changed:
-        return project, ui_state, validation, all_results
+        return project, ui_state, validation, all_results, download_op
     else:
-        return project, ui_state, validation, dash.no_update
+        return project, ui_state, validation, dash.no_update, download_op
+
+
+

@@ -4,7 +4,7 @@ import os
 
 from src.initial_values import  SERVER_SOURCES_DIR
 
-alldata = pd.DataFrame(columns=["gender", "age", "territory", "source"])
+loaded_data = pd.DataFrame(columns=["gender", "age", "territory", "source"])
 
 # Rename known variations
 # Column mapping
@@ -19,12 +19,28 @@ column_map = {
 }
 
 
-def return_all_countries():
-    countries = alldata["country"].unique()
+def return_all_territories():
+    global loaded_data
+    if loaded_data.size == 0:
+        return []
+
+    countries = loaded_data["territory"].unique()
     return countries
 
+def rows_counts_by_source_for_territories(selected_territories):
+    global loaded_data
+    # Filter rows where territory is in the selected list
+    filtered = loaded_data[loaded_data["territory"].isin(selected_territories)]
+
+    # Group by source and count rows
+    filtered_rows = filtered.groupby("source").size()
+    #print("filtered rows",filtered_rows)
+    return filtered_rows
+
+
 def rows_counts_by_source():
-    rows_counts = alldata.groupby("source").size()
+    global loaded_data
+    rows_counts = loaded_data.groupby("source").size()
     return rows_counts
 
 def load_result(source, status, filename, error):
@@ -71,12 +87,12 @@ def process_loaded_source(src_description, df, territory, details):
     # Add source column
     df_small["source"] = full_src
 
-    global alldata
-    print("df_small shape:", df_small.shape)
-    print("alldata shape:", alldata.shape)
+    global loaded_data
+    #print("df_small shape:", df_small.shape)
+    #print("loaded_data shape:", loaded_data.shape)
 
-    alldata = pd.concat([alldata, df_small], ignore_index=True)
-    print("new alldata shape:", alldata.shape)
+    loaded_data = pd.concat([loaded_data, df_small], ignore_index=True)
+    #print("new loaded_data shape:", loaded_data.shape)
 
     return ""
 
@@ -86,7 +102,7 @@ def load_csv_file(src_description, filedir, filename, src_details = None, territ
     Load a CSV file and tag it with a country name.
     """
     full_path = os.path.join(filedir, filename)
-    print("full_path:", full_path, ",filename", filename)
+    #print("full_path:", full_path, ",filename", filename)
 
     if not os.path.exists(full_path):
         return load_result(src_description, "error", filename, f"File not found: {filename}")
@@ -129,7 +145,7 @@ def load_server_dir(src):
 
     folder_path = os.path.join(basedir, dirname)
 
-    print("load folder: ", folder_path)
+    #print("load folder: ", folder_path)
     pattern = os.path.join(folder_path, "*.csv")
     files = glob.glob(pattern)
 
@@ -154,8 +170,8 @@ def load_url_file (src):
     return process_loaded_source(src_description, df, None, None)
 
 def clean_storage():
-    global alldata
-    alldata = pd.DataFrame(columns=["gender", "age", "territory", "source"])
+    global loaded_data
+    loaded_data = pd.DataFrame(columns=["gender", "age", "territory", "source"])
 
 def load_sources(sources):
     results = []

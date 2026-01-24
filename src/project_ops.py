@@ -3,7 +3,7 @@
 import json
 import os
 from src.initial_values import INITIAL_PROJECT_JSON, SERVER_SOURCES_DIR, DEFAULT_DEMOGRAPHICS_PATH, DEFAULT_ANALYSIS_PATH
-from src.data_loader import load_sources, rows_counts_by_source, clean_storage
+from src.data_loader import load_sources, rows_counts_by_source, clean_storage, return_all_territories, rows_counts_by_source_for_territories
 
 def list_server_source_files():
     files = []
@@ -65,17 +65,17 @@ def handle_new_project():
             "value": None
         }
 
-    # --- Reset selections ---
-    project["selections"] = {
-        "territories": [],
-        "source_files": []
-    }
 
     # --- Reset project name ---
     project["project_name"] = ""
 
     # --- Reset data sources ---
     project["data_sources"] = []
+
+    # --- Reset selections ----
+    project["selected_territories"] = []
+    project["selected_data_files"] = []
+
 
     return project
 
@@ -106,11 +106,11 @@ def handle_add_source(project, new_source):
 
     # Avoid duplicates
     if any(is_duplicate(s, new_source) for s in project["data_sources"]):
-        print("Duplicate data source: ", new_source["type"], ",", new_source["value"])
+        #print("Duplicate data source: ", new_source["type"], ",", new_source["value"])
         return project, []
 
     project["data_sources"].append(new_source)
-    print("Data source is added: ", new_source["type"], ",", new_source["value"])
+    #print("Data source is added: ", new_source["type"], ",", new_source["value"])
     result = load_sources([new_source])
     #for res in result:
     #    print(res)
@@ -145,7 +145,11 @@ def handle_project_field_change(project, field, value):
     return project
 
 def get_loaded_files_with_row_counts ():
-
     return rows_counts_by_source()
 
+def get_territories_list():
 
+    return return_all_territories()
+
+def get_list_of_relevant_source_files(load_results, selected_territories):
+    return  rows_counts_by_source_for_territories(selected_territories)

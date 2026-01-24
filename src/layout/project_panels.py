@@ -26,7 +26,7 @@ sources_list_panel = dbc.Card(
 
 territory_selector = html.Div(
     [
-        html.Label("Select Territories", style={"fontWeight": "600"}),
+        html.Label("Select Territories:", style={"fontWeight": "600"}),
 
         dcc.Dropdown(
             id="dd-territories",
@@ -42,7 +42,23 @@ territory_selector = html.Div(
     ]
 )
 
+data_files_selector = html.Div(
+    [
+        html.Label("Select Data Files:", style={"fontWeight": "600"}),
 
+        dcc.Dropdown(
+            id="dd-data-files",
+            options=[],          # filled dynamically
+            multi=True,
+            placeholder="Choose data files...",
+        ),
+
+        html.Div(
+            id="div-data-files-selection-status",
+            style={"marginTop": "8px", "fontSize": "0.9rem"},
+        ),
+    ]
+)
 
 selections_panel = dbc.Card(
     dbc.CardBody(

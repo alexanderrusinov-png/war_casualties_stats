@@ -2,7 +2,7 @@
 import os
 
 INITIAL_PROJECT_JSON = {
-    "project_name": "",
+    "project_file": "",
     "data_sources": [],
     "demographics": {
         "type": None,
@@ -12,10 +12,11 @@ INITIAL_PROJECT_JSON = {
         "type": None,
         "value": None
     },
-    "selections": {
-        "territories": [],
-        "source_files": []
-    }
+}
+
+INITIAL_SELECTIONS_JSON = {
+    "selected_territories": [],
+    "selected_data_files": []
 }
 
 INITIAL_UI_STATE = {
@@ -40,11 +41,11 @@ INITIAL_UI_STATE = {
 }
 
 INITIAL_VALIDATION = {
-    "demographics_valid": False,
-    "analysis_valid": False,
-    "data_sources_valid": False,
-    "selections_valid": False,
-    "errors": []
+    "demographics_file_valid": False,
+    "load_errors": ["no sources specified"],
+    "analysis_file_valid": False,
+    "territories_with_demographic_data": [],
+    "should_check_selections": False
 }
 
 # Paths to default files

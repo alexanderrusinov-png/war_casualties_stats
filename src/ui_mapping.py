@@ -1,7 +1,12 @@
-from dash import callback, Input, Output, State, html
-from src.project_ops import list_server_source_files
-from src.project_ops import list_server_directories, get_loaded_files_with_row_counts
+from dash import callback, Input, Output, State, html, ctx
+from src.project_ops import list_server_source_files, get_territories_list
+from src.project_ops import list_server_directories, get_loaded_files_with_row_counts, get_list_of_relevant_source_files
 import os
+import json
+import base64
+import dash
+from src.layout import main_layout
+
 
 # open/close modals
 @callback(
@@ -147,23 +152,23 @@ def src_description_with_details(src, filename):
 )
 def render_sources_list(load_results, project):
 
-    print ("render sources list - started")
+    #print ("render sources list - started")
 
     if project is None:
-        print("render sources list - no project")
+        #print("render sources list - no project")
         return html.Div("No project defined")
 
     if not project["data_sources"]:
-        print("render sources list - no data sources")
+        #print("render sources list - no data sources")
 
         return html.Div("No sources added yet", style={"color": "orange"})
 
-    rows_counts = get_loaded_files_with_row_counts()
+    rows_counts =  get_loaded_files_with_row_counts()
 
-    print("render sources list - data sources:")
+    #print("render sources list - data sources:")
     items = []
     for src in project["data_sources"]:
-        print("data source:", src)
+        #print("data source:", src)
         src_results = get_results_by_src(load_results, src)
         loaded = 0
         failed = 0
@@ -187,6 +192,236 @@ def render_sources_list(load_results, project):
                 items.append(html.Div(f"\u00A0\u00A0\u00A0\u00A0✗ {res['file']} - {res['error']}", style={"color": "orange"}))
 
         loaded_cnt = get_loaded_files_with_row_counts()
-        print("loaded files:", loaded_cnt)
+        #print("loaded files:", loaded_cnt)
 
     return items
+
+
+@callback(
+    Output("dd-territories", "options"),
+    Output("dd-territories", "value"),
+    Output("div-territory-selection-status", "children"),
+    Input("store-validation", "data"),
+    State("store-project-json", "data"),
+    State("dd-territories", "value")
+
+)
+def update_territories(validation, project_json, prev_selected):
+
+    if validation is None:
+        return dash.no_update, dash.no_update, dash.no_update
+
+    # 1. Extract possible values from main data
+    if project_json is None:
+        possible = []
+        selected = []
+    else:
+        possible = get_territories_list()
+        # 2. Selection in project may be not updated!
+        # selected = project_json.get("territories", [])
+        if validation["should_check_selections"]:
+            selected = project_json.get("selected_territories", [])
+        else:
+            if not prev_selected:
+                selected = []
+            else:
+                selected = prev_selected
+
+    #print("possible territories:", possible)
+    #print("selected territories:", selected)
+
+    # 3. Split into valid + invalid
+    valid = [t for t in selected if t in possible]
+    invalid = [t for t in selected if t not in possible]
+
+    # 4. Build dropdown options
+    options = [{"label": t, "value": t} for t in possible]
+
+    # 5. Build status line
+    status = []
+
+    for t in valid:
+        status.append(
+            html.Span(
+                t,
+                style={"color": "green", "marginRight": "10px"}
+            )
+        )
+
+    for t in invalid:
+        status.append(
+            html.Span(
+                f"{t} (invalid)",
+                style={"color": "red", "marginRight": "10px"}
+            )
+        )
+
+    return options, valid, status
+
+@callback(
+    Output("dd-data-files", "options"),
+    Output("dd-data-files", "value"),
+    Output("div-data-files-selection-status", "children"),
+    Input("dd-territories", "value"),
+    State("store-validation", "data"),
+    State("store-project-json", "data"),
+    State("store-source-load-results", "data"),
+    State("dd-data-files", "value")
+)
+def update_data_files(territories, validation, project_json, load_results, prev_selected):
+
+    # 1. Extract possible values from main data
+    if project_json is None:
+        possible = []
+        selected = []
+        return dash.no_update, dash.no_update, dash.no_update
+    else:
+        possible = get_list_of_relevant_source_files(load_results, territories)
+        #print ("relevant source files:", possible)
+        # Selection in project may be  not updated!
+        if validation["should_check_selections"]:
+            selected = project_json.get("selected_data_files", [])
+        else:
+            if not prev_selected:
+                selected = []
+            else:
+                selected = prev_selected
+
+    # 3. Split into valid + invalid
+    valid = [t for t in selected if t in possible]
+    invalid = [t for t in selected if t not in possible]
+
+    # 4. Build dropdown options
+    rows_counts = get_list_of_relevant_source_files(load_results, territories)
+
+    options = []
+    for res in load_results:
+        if res["status"] == "success":
+            source = res["src_description"]
+            left, right = source.split(":", 1)
+            desc = src_description_with_details({"type": left, "value": right}, res["file"])
+            cnt_value = rows_counts.get(desc, 0)
+            if cnt_value != 0:
+                msg_cnt = f"{desc} - {cnt_value}  relevant rows"
+                #print(msg_cnt)
+                options.append(desc)
+
+    #print("options:", options)
+
+    # 5. Build status line
+    status = []
+
+    for t in valid:
+        status.append(
+            html.Span(
+                t,
+                style={"color": "green", "marginRight": "10px"}
+            )
+        )
+
+    for t in invalid:
+        status.append(
+            html.Span(
+                f"{t} (invalid)",
+                style={"color": "red", "marginRight": "10px"}
+            )
+        )
+
+    return options, valid, status
+
+
+@callback(
+    Output("modal-save-as", "is_open"),
+    Input("btn-save-project", "n_clicks"),
+    Input("btn-save-as-project", "n_clicks"),
+    Input("btn-save-as-confirm", "n_clicks"),
+    Input("btn-save-as-cancel", "n_clicks"),
+    State("store-project-json", "data"),
+    State("modal-save-as", "is_open"),
+    prevent_initial_call=True
+)
+def toggle_save_as_modal(save_click, save_as_click, confirm_click, cancel_click, project_json, is_open):
+    trigger = ctx.triggered_id
+
+    if not ctx.triggered:
+        return False
+
+    trigger = ctx.triggered[0]["prop_id"].split(".")[0]
+
+    # Save button clicked
+    if trigger == "btn-save-project":
+        if not project_json:
+            return False
+
+        filename = project_json["project_file"]
+        if filename:
+            # filename exists → do NOT open modal
+            return False
+        else:
+            # no filename → open modal
+            return True
+
+    # Save As button clicked → always open modal
+    elif trigger == "btn-save-as-project":
+        return True
+
+    # Cancel button clicked → close modal
+    if trigger == "btn-save-as-cancel":
+        return False
+
+    # Cancel button clicked → close modal
+    if trigger == "btn-save-as-confirm":
+        return False
+
+    return is_open
+
+
+@callback(
+    Output("modal-open-project", "is_open"),
+    Input("btn-open-project", "n_clicks"),
+    Input("btn-open-project-cancel", "n_clicks"),
+    Input("upload-project", "contents"),
+    State("modal-open-project", "is_open"),
+    prevent_initial_call=True
+)
+def toggle_open_project_modal(open_click, cancel_click, upload_project, is_open):
+
+    trigger = ctx.triggered[0]["prop_id"].split(".")[0]
+
+    if trigger == "btn-open-project":
+        if open_click is None:
+            return is_open
+        return True
+
+    if trigger == "btn-open-project-cancel":
+        if cancel_click is None:
+            return is_open
+        return False
+
+    if trigger == "upload-project":
+        if upload_project is None:
+            return is_open
+        return False
+
+    return is_open
+
+@callback(
+    Output("store-screen", "data"),
+    Input("btn-continue", "n_clicks"),
+    prevent_initial_call=True
+)
+def go_to_main(n):
+    print("go_to_main", n)
+    return "main"
+
+@callback(
+    Output("screen-container", "children"),
+    Input("store-screen", "data")
+)
+def render_screen(screen):
+    if screen == "setup":
+        return main_layout.setup_screen_layout
+    elif screen == "main":
+        return main_layout.main_screen_layout
+
+    return dash.no_update

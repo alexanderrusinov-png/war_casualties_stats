@@ -167,3 +167,54 @@ analysis_modal = dbc.Modal(
     is_open=False,
     size="lg",
 )
+
+modal_save_as = dbc.Modal(
+    [
+        dbc.ModalHeader("Save Project As"),
+        dbc.ModalBody(
+            [
+                dbc.Label("Project name:"),
+                dbc.Input(
+                    id="input-save-as-filename",
+                    type="text",
+                    placeholder="Enter project name...",
+                ),
+            ]
+        ),
+        dbc.ModalFooter(
+            [
+                dbc.Button("Cancel", id="btn-save-as-cancel", color="secondary"),
+                dbc.Button("Save", id="btn-save-as-confirm", color="primary"),
+            ]
+        ),
+    ],
+    id="modal-save-as",
+    is_open=False,
+)
+
+open_project_modal = dbc.Modal(
+    [
+        dbc.ModalHeader("Open Project"),
+        dbc.ModalBody(
+            dcc.Upload(
+                id="upload-project",
+                children=html.Div("Drag & drop or click to select a project file"),
+                multiple=False,
+                style={
+                    "width": "100%",
+                    "height": "60px",
+                    "lineHeight": "60px",
+                    "borderWidth": "1px",
+                    "borderStyle": "dashed",
+                    "borderRadius": "5px",
+                    "textAlign": "center",
+                },
+            )
+        ),
+        dbc.ModalFooter(
+            dbc.Button("Cancel", id="btn-open-project-cancel", color="secondary")
+        ),
+    ],
+    id="modal-open-project",
+    is_open=False,
+)
